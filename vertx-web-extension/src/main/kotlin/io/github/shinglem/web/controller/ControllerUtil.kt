@@ -262,7 +262,7 @@ object DefaultControllerUtil :ControllerUtil {
                                 it.key to it.value
                             }.toMap()
                             param.putAll(query)
-                            val paramJson = JsonObject(param as Map<String, Any>?).mergeIn(body)
+                            val paramJson = JsonObject(param as Map<String, Any>?).mergeIn(body ?: JsonObject())
 
                             logger.debug("param map : $paramJson")
 
@@ -353,7 +353,8 @@ object DefaultControllerUtil :ControllerUtil {
 
 
 
-                            logger.debug("route ${it.request().path()} ------- ")
+                            logger.debug("route ${it.request().path()} ${it.request().method()} ------- ")
+                            logger.debug("route ${it.currentRoute()} ------- ")
                             when {
                                 returnKlz.isSubclassOf(Unit::class) || returnKlz.isSubclassOf(Void::class) -> {
                                     if (it.response().ended()){

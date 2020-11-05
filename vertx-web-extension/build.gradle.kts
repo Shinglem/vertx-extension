@@ -11,13 +11,14 @@ repositories {
 val vertxVersion: String by project
 dependencies {
     api(project(":vertx-core-extension"))
+    api(project(":default-class-util"))
 
     api(group = "io.vertx", name = "vertx-web", version = vertxVersion)
 
     api(kotlin("reflect"))
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-
+    testImplementation("ch.qos.logback", "logback-classic", "1.2.3")
     testImplementation("junit", "junit", "4.12")
 }
 

@@ -192,6 +192,8 @@ annotation class DELETE(val path: String)
 @Route("" , HttpMethod.TRACE)
 annotation class TRACE(val path: String)
 
+@Route("" , HttpMethod.PATCH)
+annotation class PATCH(val path: String)
 
 
 

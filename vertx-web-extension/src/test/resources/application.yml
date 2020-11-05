@@ -1,0 +1,4 @@
+vertx:
+  web:
+    httpServerOptions:
+      port: 8080

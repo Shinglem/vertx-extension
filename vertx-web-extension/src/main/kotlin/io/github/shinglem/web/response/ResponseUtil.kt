@@ -2,6 +2,8 @@ package io.github.shinglem.web.response
 
 import io.github.shinglem.web.exceptions.ResponseClassNotSupportException
 import io.vertx.core.json.Json
+import io.vertx.core.json.JsonArray
+import io.vertx.core.json.JsonObject
 
 data class ResponseEntity(var code : Int? = null,
                                   var message : String? = null,
@@ -45,6 +47,15 @@ object DefaultResponseUtil : ResponseUtil {
         if (resp is String){
             return response(ResponseEntity(RESULT_OK , resp))
         }
+
+        if (resp is JsonObject){
+            return response(ResponseEntity(RESULT_OK , "success",resp))
+        }
+
+        if (resp is JsonArray){
+            return response(ResponseEntity(RESULT_OK , "success",resp))
+        }
+
         return response(ResponseEntity(RESULT_OK , "success" , Json.encodePrettily(resp)))
     }
 

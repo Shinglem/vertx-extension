@@ -15,6 +15,7 @@ import io.vertx.core.http.Cookie
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
@@ -254,7 +255,23 @@ object DefaultControllerUtil :ControllerUtil {
 
                             logger.debug("Req => path param : [${it.pathParams()}] query param : [${it.queryParams()}] body : [${it.bodyAsString}]")
 
-                            val body = it.bodyAsJson
+                            val body = try {it.bodyAsJson} catch (e : Throwable){
+                                logger.debug("" , e)
+                                logger.debug("body to json error , return null")
+                                null
+                            }
+
+                            val bodyString = try {it.bodyAsString} catch (e : Throwable){
+                                logger.debug("" , e)
+                                logger.debug("body to string error , return null")
+                                null
+                            }
+
+                            val bodyRaw = try {it.body} catch (e : Throwable){
+                                logger.debug("" , e)
+                                logger.debug("body to string error , return null")
+                                null
+                            }
 
 
                             val param = it.pathParams()
@@ -276,61 +293,15 @@ object DefaultControllerUtil :ControllerUtil {
                                     }.safeCastTo<ParamType>()!!
 
 
-
-
-                                    when {
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.RoutingContext && pm.kParameter.type.isSupertypeOf(
-                                            RoutingContext::class.starProjectedType
-                                        ) -> pm.kParameter to it
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.String && pm.kParameter.type.isSupertypeOf(
-                                            String::class.starProjectedType
-                                        ) -> pm.kParameter to paramJson.getString(pm.name)
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.Number -> pm.kParameter to when (pm.kParameter.type) {
-//                                        String::class.starProjectedType -> paramJson.getNumber(pm.name)
-                                            Number::class.starProjectedType -> paramJson.getNumber(pm.name)
-                                            Int::class.starProjectedType -> paramJson.getInteger(pm.name)
-                                            Long::class.starProjectedType -> paramJson.getLong(pm.name)
-                                            Double::class.starProjectedType -> paramJson.getDouble(pm.name)
-                                            Float::class.starProjectedType -> paramJson.getFloat(pm.name)
-                                            else -> throw ParamNotSupportException("number ${pm.kParameter.type} is not supported")
-                                        }
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.Bool && pm.kParameter.type.isSupertypeOf(
-                                            Boolean::class.starProjectedType
-                                        ) -> pm.kParameter to paramJson.getBoolean(pm.name)
-
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.JsonObject && pm.kParameter.type.isSupertypeOf(
-                                            JsonObject::class.starProjectedType
-                                        ) -> pm.kParameter to paramJson.getJsonObject(pm.name)
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.JsonArray && pm.kParameter.type.isSupertypeOf(
-                                            JsonArray::class.starProjectedType
-                                        ) -> pm.kParameter to paramJson.getJsonArray(pm.name)
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.Entity -> pm.kParameter to paramJson.mapTo(
-                                            pm.klz.java
-                                        )
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.CookiesMap && pm.kParameter.type.isSupertypeOf(
-                                            Map::class.createType(listOf(
-                                                KTypeProjection(KVariance.INVARIANT, String::class.starProjectedType),
-                                                KTypeProjection(KVariance.INVARIANT, Cookie::class.starProjectedType),
-                                            ))
-                                        ) -> pm.kParameter to cookies
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.Id && pm.kParameter.type.isSupertypeOf(
-                                            Long::class.starProjectedType
-                                        ) -> pm.kParameter to paramJson.getJsonObject(pm.name)
-
-                                        paramAnn.paramType == ParamType.PARAM_TYPE.IdString && pm.kParameter.type.isSupertypeOf(
-                                            String()::class.starProjectedType
-                                        ) -> pm.kParameter to paramJson.getJsonObject(pm.name)
-
-
-                                        else -> throw ParamNotSupportException("${pm.ann} => ${pm.kParameter.type} is not supported")
-                                    }
+                                    mapParam(
+                                        paramAnn ,
+                                        pm,
+                                        it,
+                                        paramJson,
+                                        bodyString,
+                                        bodyRaw,
+                                        cookies
+                                    )
 
                                 }
                                 .toMutableList<Pair<KParameter, Any?>>()

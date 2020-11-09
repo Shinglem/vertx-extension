@@ -201,7 +201,7 @@ annotation class PATCH(val path: String)
 annotation class Order(val order: Int)
 
 
-internal annotation class ParamType(val paramType :PARAM_TYPE) {
+annotation class ParamType(val paramType :PARAM_TYPE) {
     enum class PARAM_TYPE {
         RoutingContext ,
         String ,
@@ -211,6 +211,10 @@ internal annotation class ParamType(val paramType :PARAM_TYPE) {
         JsonArray ,
         Entity ,
         CookiesMap ,
+        ParamsMap,
+        BodyString,
+        BodyRaw,
+        FileUpload,
         Id ,
         IdString
     }
@@ -236,6 +240,18 @@ annotation class JsonObjectParam
 
 @ParamType(ParamType.PARAM_TYPE.JsonArray)
 annotation class JsonArrayParam
+
+@ParamType(ParamType.PARAM_TYPE.ParamsMap)
+annotation class ParamsMap
+
+@ParamType(ParamType.PARAM_TYPE.BodyString)
+annotation class BodyString
+
+@ParamType(ParamType.PARAM_TYPE.BodyRaw)
+annotation class BodyRaw
+
+@ParamType(ParamType.PARAM_TYPE.FileUpload)
+annotation class FileUpload
 
 @ParamType(ParamType.PARAM_TYPE.Entity)
 annotation class EntityParam

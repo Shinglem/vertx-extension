@@ -23,14 +23,14 @@ const val RESULT_OK  = 0
 const val RESULT_NOK = 1
 
 object DefaultResponseUtil : ResponseUtil {
-    private fun <T> response(resp: T?): String {
-        if (resp == null) {
-            throw ResponseClassNotSupportException("null response not support")
-        }
+    private fun response(resp: ResponseEntity): String {
+//        if (resp == null) {
+//            throw ResponseClassNotSupportException("null response not support")
+//        }
 
-        if(resp !is ResponseEntity) {
-            throw ResponseClassNotSupportException("${resp!!::class.simpleName} response not support")
-        }
+//        if(resp !is ResponseEntity) {
+//            throw ResponseClassNotSupportException("${resp!!::class.simpleName} response not support")
+//        }
 
         return Json.encodePrettily(resp)
 
@@ -56,7 +56,7 @@ object DefaultResponseUtil : ResponseUtil {
             return response(ResponseEntity(RESULT_OK , "success",resp))
         }
 
-        return response(ResponseEntity(RESULT_OK , "success" , Json.encodePrettily(resp)))
+        return response(ResponseEntity(RESULT_OK , "success" , resp))
     }
 
 }

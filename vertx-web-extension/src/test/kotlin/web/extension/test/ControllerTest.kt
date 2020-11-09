@@ -32,7 +32,7 @@ class ControllerTest : BaseWebTest() {
         }
     }
 
-    fun <T> launch(block : suspend () -> T) {
+    fun <T> launch(block: suspend () -> T) {
         CoroutineScope(vertx.dispatcher()).launch {
             block()
         }
@@ -72,35 +72,40 @@ class ControllerTest : BaseWebTest() {
 
                 rc.response().end()
             }
+
             @OPTIONS("/foo/OPTIONS")
             suspend fun testOptions(@Context rc: RoutingContext) {
 
                 rc.response().end()
             }
+
             @HEAD("/foo/HEAD")
             suspend fun testHead(@Context rc: RoutingContext) {
 
                 rc.response().end()
             }
+
             @PUT("/foo/PUT")
-            suspend fun testPut( @Context rc: RoutingContext) {
+            suspend fun testPut(@Context rc: RoutingContext) {
 
 
                 rc.response().end()
             }
+
             @DELETE("/foo/DELETE")
-            suspend fun testDelete( @Context rc: RoutingContext) {
+            suspend fun testDelete(@Context rc: RoutingContext) {
 
                 rc.response().end()
             }
+
             @TRACE("/foo/TRACE")
-            suspend fun testTrace( @Context rc: RoutingContext) {
+            suspend fun testTrace(@Context rc: RoutingContext) {
 
                 rc.response().end()
             }
 
             @PATCH("/foo/PATCH")
-            suspend fun testPatch( @Context rc: RoutingContext) {
+            suspend fun testPatch(@Context rc: RoutingContext) {
 
                 rc.response().end()
             }
@@ -123,11 +128,11 @@ class ControllerTest : BaseWebTest() {
             )
 
             for (meth in METHODS) {
-                for (method in METHODS){
+                for (method in METHODS) {
                     if (meth != method) {
-                        testRequest(method, path+meth.name(), HttpResponseStatus.METHOD_NOT_ALLOWED)
-                    }else{
-                        testRequest(method, path+meth.name(), HttpResponseStatus.OK)
+                        testRequest(method, path + meth.name(), HttpResponseStatus.METHOD_NOT_ALLOWED)
+                    } else {
+                        testRequest(method, path + meth.name(), HttpResponseStatus.OK)
                     }
                 }
 
@@ -139,34 +144,47 @@ class ControllerTest : BaseWebTest() {
     @Test
     @Throws(Exception::class)
     fun testParam() {
-
         @Controller
         class TestController {
             @Route("/foo")
             fun testParam(
-                @StringParam string: String ,
-                @NumberParam number: Number ,
-                @BoolParam boolean: Boolean ,
-                @JsonObjectParam jsonObject : JsonObject ,
-                @JsonArrayParam jsonArray: JsonArray ,
+                @StringParam string: String,
+                @NumberParam number: Number,
+                @BoolParam boolean: Boolean,
+                @JsonObjectParam jsonObject: JsonObject,
+                @JsonArrayParam jsonArray: JsonArray,
 
-            ) : JsonObject{
+                ): JsonObject {
                 return JsonObject()
-                    .put("string" , string)
-                    .put("number" , number)
-                    .put("boolean" , boolean)
-                    .put("jsonObject" , jsonObject)
-                    .put("jsonArray" , jsonArray)
+                    .put("string", string)
+                    .put("number", number)
+                    .put("boolean", boolean)
+                    .put("jsonObject", jsonObject)
+                    .put("jsonArray", jsonArray)
+            }
+
+            @Route("/foo2")
+            fun testParam2(
+                @EntityParam entity: TestData2,
+            ): TestData2 {
+                return entity
             }
         }
+
+
         runBlocking(vertx.dispatcher()) {
             val respUtil = WebConfig.responseUtil()
-            val json = JsonObject()
-                .put("string" , "str")
-                .put("number" , 123)
-                .put("boolean" , false)
-                .put("jsonObject" , JsonObject().put("json" , "test"))
-                .put("jsonArray" , JsonArray().add("aaa").add(111))
+
+            val test1 = TestData( "str", 123, false, JsonObject().put("json" , "test"), JsonArray().add("aaa").add(111))
+
+//            val json = JsonObject()
+//                .put("string" , "str")
+//                .put("number" , 123)
+//                .put("boolean" , false)
+//                .put("jsonObject" , JsonObject().put("json" , "test"))
+//                .put("jsonArray" , JsonArray().add("aaa").add(111))
+
+            val json =  JsonObject.mapFrom(test1)
 
             testRequest(HttpMethod.POST, "/foo", HttpResponseStatus.OK , respUtil.successResponse(json).trim(),json.encode()) {
                 val a = JsonObject(respUtil.successResponse(json).trim())
@@ -176,6 +194,32 @@ class ControllerTest : BaseWebTest() {
                 val buff = it.body().await()
 
                 val c =   JsonObject(buff)
+                Assert.assertEquals(a, c)
+
+            }
+        }
+
+        runBlocking(vertx.dispatcher()) {
+            val respUtil = WebConfig.responseUtil()
+
+            val test1 = TestData2("str", 123, false, Entity("test"))
+
+            val json = JsonObject.mapFrom(test1)
+
+            testRequest(
+                HttpMethod.POST,
+                "/foo2",
+                HttpResponseStatus.OK,
+                respUtil.successResponse(json).trim(),
+                json.encode()
+            ) {
+                val a = JsonObject(respUtil.successResponse(json).trim())
+                val b = json
+                Assert.assertEquals(a.getJsonObject("data"), b)
+
+                val buff = it.body().await()
+
+                val c = JsonObject(buff)
                 Assert.assertEquals(a, c)
 
             }

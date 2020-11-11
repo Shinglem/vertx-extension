@@ -63,10 +63,6 @@ object DefaultRouteUtil : RouteUtil {
             logger.info("[failure Handler]");
 
 
-            val response = it.response()
-            response.putHeader("content-type", "text/xml; charset=\"utf-8\"")
-
-
 
             when (val errorCode = it.statusCode()) {
 
@@ -87,7 +83,6 @@ object DefaultRouteUtil : RouteUtil {
 
         }
         router.route().order(-1000).handler { rc ->
-
             val response = rc.response()
             response.isChunked = true
             response.putHeader(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)

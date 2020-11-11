@@ -19,6 +19,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     testImplementation("ch.qos.logback", "logback-classic", "1.2.3")
+    testImplementation("io.vertx", "vertx-web-client", vertxVersion)
     testImplementation("junit", "junit", "4.12")
 }
 

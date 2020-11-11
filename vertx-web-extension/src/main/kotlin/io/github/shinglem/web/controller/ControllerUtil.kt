@@ -6,23 +6,20 @@ import io.github.shinglem.web.annotions.Controller
 import io.github.shinglem.web.annotions.ParamType
 import io.github.shinglem.web.annotions.Route
 import io.github.shinglem.web.exceptions.FunctionNotSupportException
-import io.github.shinglem.web.exceptions.ParamNotSupportException
 import io.github.shinglem.web.exceptions.ParamRegistException
 import io.github.shinglem.web.exceptions.RouteRegistException
 import io.github.shinglem.web.response.ResponseUtil
 import io.vertx.core.Future
-import io.vertx.core.http.Cookie
 import io.vertx.core.http.HttpMethod
-import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
-import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.coroutines.await
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
-import kotlin.reflect.*
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.jvmErasure
 
@@ -312,6 +309,7 @@ object DefaultControllerUtil :ControllerUtil {
                                 }
                                 .toMap()
 
+                            logger.debug("params map : $params")
 
                             val result = func.callSuspendBy(params)
                                 .let {

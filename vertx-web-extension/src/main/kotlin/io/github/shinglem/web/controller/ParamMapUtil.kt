@@ -1,5 +1,6 @@
 package io.github.shinglem.web.controller
 
+import io.github.shinglem.core.main.VERTX
 import io.github.shinglem.web.annotions.BodyString
 import io.github.shinglem.web.annotions.ParamType
 import io.github.shinglem.web.exceptions.ParamNotSupportException
@@ -98,11 +99,11 @@ fun mapParam(paramAnn : ParamType , pm : ParamModel , it : RoutingContext , para
 
         paramAnn.paramType == ParamType.PARAM_TYPE.Id && pm.kParameter.type.isSupertypeOf(
             Long::class.starProjectedType
-        ) -> pm.kParameter to paramJson.getJsonObject(pm.name)
+        ) -> pm.kParameter to VERTX.nextId()
 
         paramAnn.paramType == ParamType.PARAM_TYPE.IdString && pm.kParameter.type.isSupertypeOf(
             String()::class.starProjectedType
-        ) -> pm.kParameter to paramJson.getJsonObject(pm.name)
+        ) -> pm.kParameter to VERTX.nextIdStr()
 
 
         else -> throw ParamNotSupportException("${pm.ann} => ${pm.kParameter.type} is not supported")

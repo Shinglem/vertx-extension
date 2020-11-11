@@ -58,8 +58,8 @@ open class BaseWebTest {
     protected suspend fun testRequest(
         method: HttpMethod?, path: String?,
         statusCode: HttpResponseStatus,
-        responseBody: String?,
-        requestBody: String? ,
+        responseBody: String? = null,
+        requestBody: Any? = null,
         responseAssert :  suspend (resp : HttpClientResponse) -> Unit
     ) {
         testRequest(method, path, null, null, statusCode.code(), statusCode.reasonPhrase(), responseBody, requestBody , responseAssert = responseAssert)

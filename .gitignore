@@ -52,6 +52,7 @@ nbdist/
 # vertx
 .vertx/
 logs/
+file-uploads
 
 
 

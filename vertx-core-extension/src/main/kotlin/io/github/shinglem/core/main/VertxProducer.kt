@@ -19,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.net.InetAddress
+import java.time.LocalDateTime
 import java.util.concurrent.CountDownLatch
 import kotlin.reflect.KClass
 
@@ -96,6 +97,8 @@ interface VertxProducer {
     fun vertx(): Vertx
     fun baseOption(): DeploymentOptions
 
+    fun nextId(): Long
+    fun nextIdStr(): String
 }
 
 object VertxSingleProducer : VertxProducer {
@@ -121,7 +124,7 @@ object VertxSingleProducer : VertxProducer {
 
     private fun vertxInit() {
 
-        logger.debug("----- Start cluster VERTX-----")
+        logger.debug("----- Start VERTX-----")
         logger.debug("-----Setproperty: Log4j2LogDelegateFactory-----")
 
         logger.debug("----- register json mapper -----")
@@ -167,6 +170,14 @@ object VertxSingleProducer : VertxProducer {
         return baseOption!!
     }
 
+    override fun nextId(): Long {
+        TODO("Not yet implemented")
+    }
+
+    override fun nextIdStr(): String {
+        TODO("Not yet implemented")
+    }
+
 
 }
 
@@ -194,9 +205,9 @@ object VERTX : VertxProducer by VertxSingleProducer {
 
     private val idGenerator = idFactory.getIdGenerator(idGeneratorName)
 
-    fun nextId() = idGenerator.nextId()
+    override fun nextId() = idGenerator.nextId()
 
-    fun nextIdStr() = idGenerator.next()
+    override fun nextIdStr() = idGenerator.next()
 }
 
 
@@ -209,7 +220,6 @@ object VertxMain {
     private var verticleClass: Class<*>? = null
 
     init {
-
         System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.SLF4JLogDelegateFactory")
         System.setProperty("user.timezone", "GMT +08")
         System.setProperty("kotlinx.coroutines.debug", "")

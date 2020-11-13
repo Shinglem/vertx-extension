@@ -16,6 +16,13 @@ object WebConfig {
 
     private val config = VertxConfig.config().getJsonObject("vertx")["web"] ?: JsonObject()
 
+    private val classUtil = ClassUtilFactory().getClassUtil()
+
+    fun controllerPack(): String {
+        val options = config.getString("controllerPack") ?: ""
+        return options
+    }
+
     fun httpServerOptions() : HttpServerOptions {
 
         val options = config.getJsonObject("httpServerOptions") ?: JsonObject()
@@ -32,7 +39,7 @@ object WebConfig {
                 if("default" == it){
                     return@let DefaultResponseUtil
                 }
-                return@let ClassUtilFactory().getClassUtil().getInstance(it) as ResponseUtil
+                return@let classUtil.getInstance(it) as ResponseUtil
             }
 
         return util
@@ -44,7 +51,7 @@ object WebConfig {
                 if("default" == it){
                     return@let DefaultRouteUtil
                 }
-                return@let ClassUtilFactory().getClassUtil().getInstance(it) as RouteUtil
+                return@let classUtil.getInstance(it) as RouteUtil
             }
 
         return util
@@ -56,7 +63,7 @@ object WebConfig {
                 if("default" == it){
                     return@let DefaultControllerUtil
                 }
-                return@let ClassUtilFactory().getClassUtil().getInstance(it) as ControllerUtil
+                return@let classUtil.getInstance(it) as ControllerUtil
         }
 
         return util

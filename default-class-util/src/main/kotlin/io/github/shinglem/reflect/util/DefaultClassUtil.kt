@@ -1,6 +1,7 @@
 package io.github.shinglem.reflect.util
 
 import io.github.shinglem.util.ClassUtil
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileFilter
 import java.io.IOException
@@ -10,6 +11,7 @@ import java.net.URLDecoder
 import java.util.*
 import java.util.jar.JarFile
 import kotlin.reflect.KClass
+import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.createInstance
 
 
@@ -143,7 +145,6 @@ class DefaultClassUtil : ClassUtil {
                     // 添加到集合中去
                     // classes.add(Class.forName(packageName + '.' +
                     // className));
-                    // 经过回复同学的提醒，这里用forName有一些不好，会触发static方法，没有使用classLoader的load干净
                     classes.add(
                         Thread.currentThread().contextClassLoader.loadClass("${if (packageName.isNullOrEmpty()) "" else "$packageName."}$className")
                     )

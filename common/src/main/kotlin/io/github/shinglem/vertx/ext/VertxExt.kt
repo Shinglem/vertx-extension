@@ -18,9 +18,13 @@ suspend fun <T> Vertx.parallelBlocking(block: () -> T): T {
 }
 
 suspend fun <T> Vertx.blocking(block: () -> T): T {
-    return this.executeBlocking<T>({ fut ->
+    return try {
+        this.executeBlocking<T>({ fut ->
             fut.complete(block())
         }).await()
+    } catch (e: Throwable) {
+        throw e
+    }
 
 }
 //fun <T> Vertx.blockingAsync(block: () -> T ,success: (T) -> Unit = {} , error: (Throwable) ->Unit = {}) {

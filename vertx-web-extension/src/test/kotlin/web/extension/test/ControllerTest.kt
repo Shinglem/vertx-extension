@@ -1,45 +1,38 @@
 package web.extension.test
 
+import io.github.shinglem.core.main.VERTX
 import io.github.shinglem.core.main.VertxMain
+import io.github.shinglem.util.STRING_COMPARATOR
 import io.github.shinglem.web.annotions.*
 import io.github.shinglem.web.config.WebConfig
 import io.github.shinglem.web.verticle.WebVerticle
 import io.netty.handler.codec.http.HttpResponseStatus
-import io.vertx.core.http.HttpClientResponse
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.client.WebClient
-import io.vertx.ext.web.handler.BodyHandler
 import io.vertx.ext.web.multipart.MultipartForm
 import io.vertx.kotlin.coroutines.await
 import io.vertx.kotlin.coroutines.dispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert
-import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
-import org.junit.runner.Request
-import org.junit.runner.Request.method
-import java.nio.Buffer
+import java.time.LocalDateTime
 import java.util.*
 
 
 class ControllerTest : BaseWebTest() {
 
-    @Before
-    fun initVerticle() {
-        runBlocking {
-            VertxMain.start(WebVerticle::class)
-        }
-    }
-
-    fun <T> launch(block: suspend () -> T) {
-        CoroutineScope(vertx.dispatcher()).launch {
-            block()
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun initVerticle() {
+            println("-----start ${LocalDateTime.now()}-----")
+            runBlocking {
+                VertxMain.start(WebVerticle::class).join()
+            }
         }
     }
 
@@ -47,16 +40,16 @@ class ControllerTest : BaseWebTest() {
     @Throws(Exception::class)
     fun testSimpleRoute() {
 
-        @Controller
-        class TestController {
-            @Route("/")
-            fun testSimpleRoute(@Context rc: RoutingContext) {
-                rc.response().end()
-            }
-        }
         runBlocking(vertx.dispatcher()) {
+            webClient
+                .get("/")
+                .send()
+                .await()
+                .let {
+                    Assert.assertEquals(200, it.statusCode())
+                    Assert.assertEquals("OK", it.statusMessage())
 
-            testRequest(HttpMethod.GET, "/", 200, "OK")
+                }
         }
     }
 
@@ -64,57 +57,7 @@ class ControllerTest : BaseWebTest() {
     @Throws(Exception::class)
     fun testMethod() {
 
-        @Controller
-        class TestController {
-            @GET("/foo/GET")
-            suspend fun testGet(@Context rc: RoutingContext) {
 
-                rc.response().end()
-            }
-
-            @POST("/foo/POST")
-            suspend fun testPost(@Context rc: RoutingContext) {
-
-                rc.response().end()
-            }
-
-            @OPTIONS("/foo/OPTIONS")
-            suspend fun testOptions(@Context rc: RoutingContext) {
-
-                rc.response().end()
-            }
-
-            @HEAD("/foo/HEAD")
-            suspend fun testHead(@Context rc: RoutingContext) {
-
-                rc.response().end()
-            }
-
-            @PUT("/foo/PUT")
-            suspend fun testPut(@Context rc: RoutingContext) {
-
-
-                rc.response().end()
-            }
-
-            @DELETE("/foo/DELETE")
-            suspend fun testDelete(@Context rc: RoutingContext) {
-
-                rc.response().end()
-            }
-
-            @TRACE("/foo/TRACE")
-            suspend fun testTrace(@Context rc: RoutingContext) {
-
-                rc.response().end()
-            }
-
-            @PATCH("/foo/PATCH")
-            suspend fun testPatch(@Context rc: RoutingContext) {
-
-                rc.response().end()
-            }
-        }
         runBlocking(vertx.dispatcher()) {
 
             val path = "/foo/"
@@ -134,11 +77,19 @@ class ControllerTest : BaseWebTest() {
 
             for (meth in METHODS) {
                 for (method in METHODS) {
-                    if (meth != method) {
-                        testRequest(method, path + meth.name(), HttpResponseStatus.METHOD_NOT_ALLOWED)
-                    } else {
-                        testRequest(method, path + meth.name(), HttpResponseStatus.OK)
-                    }
+
+                    webClient
+                        .request(method, path + meth.name())
+                        .send()
+                        .await()
+                        .let {
+                            if (meth == method) {
+                                Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                            } else {
+                                Assert.assertEquals(HttpResponseStatus.METHOD_NOT_ALLOWED.code(), it.statusCode())
+                            }
+
+                        }
                 }
 
             }
@@ -149,110 +100,30 @@ class ControllerTest : BaseWebTest() {
     @Test
     @Throws(Exception::class)
     fun testParam() {
-        @Controller
-        class TestController {
-            @Route("/foo")
-            fun testParam(
-                @StringParam string: String,
-                @NumberParam number: Number,
-                @BoolParam boolean: Boolean,
-                @JsonObjectParam jsonObject: JsonObject,
-                @JsonArrayParam jsonArray: JsonArray,
-
-                ): JsonObject {
-                return JsonObject()
-                    .put("string", string)
-                    .put("number", number)
-                    .put("boolean", boolean)
-                    .put("jsonObject", jsonObject)
-                    .put("jsonArray", jsonArray)
-            }
-
-            @Route("/foo2")
-            fun testParam2(
-                @EntityParam entity: TestData2,
-            ): TestData2 {
-                return entity
-            }
-
-
-            @Route("/foo3/:b")
-            fun testParam3(
-                @ParamsMap map: Map<String, Any>,
-                @ParamsMap json: JsonObject,
-
-                ): JsonObject {
-                return JsonObject().put("map", map).put("json", json)
-            }
-
-
-            @Route("/foo4")
-            fun testParam4(
-                @BodyString str: String,
-                @BodyRaw raw: io.vertx.core.buffer.Buffer,
-
-                ): JsonObject {
-                return JsonObject().put("str", str).put("raw", raw)
-            }
-
-            @Route("/foo5")
-            fun testParam5(
-                @Id id: Long,
-                @IdString idStr: String,
-
-                ): JsonObject {
-                return JsonObject().put("id", id).put("idStr", idStr)
-            }
-
-            @Route("/foo6")
-            fun testParam6(
-                @FileUpload files: Set<io.vertx.ext.web.FileUpload>
-
-
-            ): JsonArray {
-
-                val r = files.map {
-                    it.uploadedFileName()
-                }.also {
-                    println(it)
-                }
-
-                return JsonArray(r)
-            }
-        }
-
 
         runBlocking(vertx.dispatcher()) {
             val respUtil = WebConfig.responseUtil()
 
             val test1 = TestData("str", 123, false, JsonObject().put("json", "test"), JsonArray().add("aaa").add(111))
 
-//            val json = JsonObject()
-//                .put("string" , "str")
-//                .put("number" , 123)
-//                .put("boolean" , false)
-//                .put("jsonObject" , JsonObject().put("json" , "test"))
-//                .put("jsonArray" , JsonArray().add("aaa").add(111))
-
             val json = JsonObject.mapFrom(test1)
 
-            testRequest(
-                HttpMethod.POST,
-                "/foo",
-                HttpResponseStatus.OK,
-                respUtil.successResponse(json).trim(),
-                json.encode()
-            ) {
-                val a = JsonObject(respUtil.successResponse(json).trim())
-                val b = json
-                Assert.assertEquals(a.getJsonObject("data"), b)
 
-                val buff = it.body().await()
+            webClient
+                .request(HttpMethod.POST, "/foo1")
+                .sendJson(test1)
+                .await()
+                .let {
+                    Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                    val a = JsonObject(respUtil.successResponse(json).trim())
+                    val b = json
+                    Assert.assertEquals(a.getJsonObject("data"), b)
 
-                val c = JsonObject(buff)
-                Assert.assertEquals(a, c)
+                    val buff = it.body()
 
-            }
+                    val c = JsonObject(buff)
+                    Assert.assertEquals(a, c)
+                }
         }
 
         runBlocking(vertx.dispatcher()) {
@@ -262,23 +133,22 @@ class ControllerTest : BaseWebTest() {
 
             val json = JsonObject.mapFrom(test1)
 
-            testRequest(
-                HttpMethod.POST,
-                "/foo2",
-                HttpResponseStatus.OK,
-                respUtil.successResponse(json).trim(),
-                json.encode()
-            ) {
-                val a = JsonObject(respUtil.successResponse(json).trim())
-                val b = json
-                Assert.assertEquals(a.getJsonObject("data"), b)
+            webClient
+                .request(HttpMethod.POST, "/foo2")
+                .sendJson(test1)
+                .await()
+                .let {
+                    Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                    val a = JsonObject(respUtil.successResponse(json).trim())
+                    val b = json
+                    Assert.assertEquals(a.getJsonObject("data"), b)
 
-                val buff = it.body().await()
+                    val buff = it.body()
 
-                val c = JsonObject(buff)
-                Assert.assertEquals(a, c)
+                    val c = JsonObject(buff)
+                    Assert.assertEquals(a, c)
+                }
 
-            }
         }
 
         runBlocking(vertx.dispatcher()) {
@@ -291,20 +161,18 @@ class ControllerTest : BaseWebTest() {
                 put("map", param)
                 put("json", param)
             }
+            webClient
+                .request(HttpMethod.POST, "/foo3/bbb?c=ccc")
+                .sendJsonObject(json)
+                .await()
+                .let {
+                    Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                    val a = JsonObject(respUtil.successResponse(result).trim())
+                    val buff = it.body()
+                    val c = JsonObject(buff)
+                    Assert.assertEquals(a, c)
+                }
 
-            testRequest(
-                HttpMethod.POST,
-                "/foo3/bbb?c=ccc",
-                HttpResponseStatus.OK,
-                respUtil.successResponse(json).trim(),
-                json.encode()
-            ) {
-                val a = JsonObject(respUtil.successResponse(result).trim())
-                val buff = it.body().await()
-                val c = JsonObject(buff)
-                Assert.assertEquals(a, c)
-
-            }
         }
 
         runBlocking(vertx.dispatcher()) {
@@ -318,46 +186,41 @@ class ControllerTest : BaseWebTest() {
                 put("raw", raw)
             }
 
-            testRequest(
-                HttpMethod.POST,
-                "/foo4",
-                HttpResponseStatus.OK,
-                respUtil.successResponse(result).trim(),
-                str
-            ) {
-                val a = JsonObject(respUtil.successResponse(result).trim())
-                val buff = it.body().await()
-                val c = JsonObject(buff)
-                Assert.assertEquals(a, c)
-
-            }
+            webClient
+                .request(HttpMethod.POST, "/foo4")
+                .sendBuffer(raw)
+                .await()
+                .let {
+                    Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                    val a = JsonObject(respUtil.successResponse(result).trim())
+                    val buff = it.body()
+                    val c = JsonObject(buff)
+                    Assert.assertEquals(a, c)
+                }
         }
 
         runBlocking(vertx.dispatcher()) {
-            val respUtil = WebConfig.responseUtil()
+            webClient
+                .request(HttpMethod.POST, "/foo5")
+                .send()
+                .await()
+                .let {
+                    Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                    val buff = it.body()
+                    val c = JsonObject(buff).getJsonObject("data")
+                    val id = c.getLong("id")
+                    val idStr = c.getString("idStr")
+                    Assert.assertSame(id::class.simpleName, Long::class.simpleName)
+                    Assert.assertSame(idStr::class.simpleName, String::class.simpleName)
+                }
 
-            testRequest(
-                HttpMethod.POST,
-                "/foo5",
-                HttpResponseStatus.OK,
-
-                ) {
-
-                val buff = it.body().await()
-                val c = JsonObject(buff).getJsonObject("data")
-                val id = c.getLong("id")
-                val idStr = c.getString("idStr")
-                Assert.assertSame(id::class.simpleName, Long::class.simpleName)
-                Assert.assertSame(idStr::class.simpleName, String::class.simpleName)
-
-            }
         }
 
         runBlocking(vertx.dispatcher()) {
 
             val buff = vertx.fileSystem().readFile(".htdigest").await()
-
-            WebClient.create(vertx)
+            val respUtil = WebConfig.responseUtil()
+            webClient
                 .postAbs("http://127.0.0.1:8080/foo6")
                 .sendMultipartForm(
                     MultipartForm.create()
@@ -365,9 +228,11 @@ class ControllerTest : BaseWebTest() {
                         .binaryFileUpload("file2", "name2", buff, "txt/plain")
                 )
                 .await()
-                .bodyAsString()
-                .also {
-                    println(it)
+                .let {
+                    Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                    val result = it.bodyAsJsonObject().getJsonArray("data").map { it.toString() }.toSortedSet(STRING_COMPARATOR)
+                    val expect =  JsonArray().add("test").add(buff.toString()).map { it.toString() }.toSortedSet(STRING_COMPARATOR)
+                    Assert.assertEquals(expect, result)
                 }
 
 
@@ -378,39 +243,173 @@ class ControllerTest : BaseWebTest() {
     @Throws(Exception::class)
     fun testOrder() {
 
-        @Controller
-        class TestController {
-            @Route("/order")
-            @Order(1)
-            fun testSimpleRoute1(@Context rc: RoutingContext) {
-                rc.response().write("bananas")
-                rc.next()
-            }
 
-            @Route("/order")
-            @Order(5)
-            fun testSimpleRoute3(@Context rc: RoutingContext) {
-                rc.response().end("oranges")
-            }
-
-            @Route("/order")
-            @Order(4)
-            fun testSimpleRoute2(@Context rc: RoutingContext) {
-                rc.response().write("apples")
-                rc.next()
-            }
-        }
         runBlocking(vertx.dispatcher()) {
 
             WebClient.create(vertx)
-                .getAbs("http://127.0.0.1:8080/foo6")
+                .getAbs("http://127.0.0.1:8080/order")
                 .send()
                 .await()
                 .bodyAsString()
                 .also {
-                    Assert.assertEquals("bananasapplesoranges" , it)
+                    Assert.assertEquals("bananasapplesoranges", it)
                 }
 
         }
+    }
+}
+
+@Controller
+class TestController1 {
+    @ROUTE("/")
+    fun testSimpleRoute(@Context rc: RoutingContext) {
+        rc.response().end()
+    }
+}
+
+@Controller
+class TestController2 {
+    @ROUTE("/foo1")
+    fun testParam(
+        @StringParam string: String,
+        @NumberParam number: Number,
+        @BoolParam boolean: Boolean,
+        @JsonObjectParam jsonObject: JsonObject,
+        @JsonArrayParam jsonArray: JsonArray,
+
+        ): JsonObject {
+        return JsonObject()
+            .put("string", string)
+            .put("number", number)
+            .put("boolean", boolean)
+            .put("jsonObject", jsonObject)
+            .put("jsonArray", jsonArray)
+    }
+
+    @ROUTE("/foo2")
+    fun testParam2(
+        @EntityParam entity: TestData2,
+    ): TestData2 {
+        return entity
+    }
+
+
+    @ROUTE("/foo3/:b")
+    fun testParam3(
+        @ParamsMap map: Map<String, Any>,
+        @ParamsMap json: JsonObject,
+
+        ): JsonObject {
+        return JsonObject().put("map", map).put("json", json)
+    }
+
+
+    @ROUTE("/foo4")
+    fun testParam4(
+        @BodyString str: String,
+        @BodyRaw raw: io.vertx.core.buffer.Buffer,
+
+        ): JsonObject {
+        return JsonObject().put("str", str).put("raw", raw)
+    }
+
+    @ROUTE("/foo5")
+    fun testParam5(
+        @Id id: Long,
+        @IdString idStr: String,
+
+        ): JsonObject {
+        return JsonObject().put("id", id).put("idStr", idStr)
+    }
+
+    @ROUTE("/foo6")
+    suspend fun testParam6(
+        @FileUpload files: Set<io.vertx.ext.web.FileUpload>
+
+
+    ): JsonArray {
+
+        val r = files.map {
+            val name = it.uploadedFileName()
+            val fileBuff = VERTX.vertx().fileSystem().readFile(name).await()
+            fileBuff.toString()
+        }
+
+        return JsonArray(r)
+    }
+}
+
+@Controller
+class TestController3 {
+    @GET("/foo/GET")
+    suspend fun testGet(@Context rc: RoutingContext) {
+        rc.response().end()
+    }
+
+    @POST("/foo/POST")
+    suspend fun testPost(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+
+    @OPTIONS("/foo/OPTIONS")
+    suspend fun testOptions(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+
+    @HEAD("/foo/HEAD")
+    suspend fun testHead(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+
+    @PUT("/foo/PUT")
+    suspend fun testPut(@Context rc: RoutingContext) {
+
+
+        rc.response().end()
+    }
+
+    @DELETE("/foo/DELETE")
+    suspend fun testDelete(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+
+    @TRACE("/foo/TRACE")
+    suspend fun testTrace(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+
+    @PATCH("/foo/PATCH")
+    suspend fun testPatch(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+}
+
+
+@Controller
+class TestController4 {
+    @ROUTE("/order")
+    @Order(1)
+    fun testSimpleRoute1(@Context rc: RoutingContext) {
+        rc.response().write("bananas")
+        rc.next()
+    }
+
+    @ROUTE("/order")
+    @Order(5)
+    fun testSimpleRoute3(@Context rc: RoutingContext) {
+        rc.response().end("oranges")
+    }
+
+    @ROUTE("/order")
+    @Order(4)
+    fun testSimpleRoute2(@Context rc: RoutingContext) {
+        rc.response().write("apples")
+        rc.next()
     }
 }

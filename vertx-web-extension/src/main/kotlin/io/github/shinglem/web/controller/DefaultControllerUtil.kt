@@ -40,7 +40,10 @@ data class FunctionInfo(
     val func: KFunction<*>,
     val routeInfos: List<RouteInfo>,
     val order: Int,
-    val blocking: Boolean
+    val blocking: Boolean,
+    val regex: Boolean,
+    val consumes: List<String>,
+    val produces: List<String>
 )
 
 
@@ -127,8 +130,30 @@ object DefaultControllerUtil : ControllerUtil {
                             }
                             ?.let { true } ?: false
 
+                        val regex = func
+                            .annotations
+                            .firstOrNull { ann ->
+                                ann.annotationClass.isSubclassOf(Regex::class)
+                            }
+                            ?.let { true } ?: false
 
-                        return@m FunctionInfo(func, ri, order, block)
+                        val consumes = func
+                            .annotations
+                            .firstOrNull { ann ->
+                                ann.annotationClass.isSubclassOf(Consumes::class)
+                            }
+                            ?.safeCastTo<Consumes>()
+                            ?.contentType?.toList() ?: listOf<String>()
+
+                        val produces = func
+                            .annotations
+                            .firstOrNull { ann ->
+                                ann.annotationClass.isSubclassOf(Produces::class)
+                            }
+                            ?.safeCastTo<Produces>()
+                            ?.contentType?.toList() ?: listOf<String>()
+
+                        return@m FunctionInfo(func, ri, order, block, regex, consumes, produces)
 
                     }
 
@@ -148,13 +173,28 @@ object DefaultControllerUtil : ControllerUtil {
         infos.forEach { (controllerKlz, routeTriple) ->
             val controller = classUtil.getInstance(controllerKlz)
 
-            routeTriple.forEach { (func, routeInfos, order, block) ->
+            routeTriple.forEach { (func, routeInfos, order, block, regex, consumers, produces) ->
 
                 routeInfos.forEach { routeInfo ->
-                    val route = router.route(routeInfo.path)
+                    val route = if (regex) {
+                        router.routeWithRegex(routeInfo.path)
+                    } else {
+                        router.route(routeInfo.path)
+                    }
+
                     routeInfo.method.forEach { httpMethod ->
                         route.method(httpMethod)
                     }
+
+
+                    consumers.forEach { contentType ->
+                        route.consumes(contentType)
+                    }
+
+                    produces.forEach { contentType ->
+                        route.produces(contentType)
+                    }
+
                     route.order(order)
 
                     val handler: Handler<RoutingContext> = Handler { rc: RoutingContext ->

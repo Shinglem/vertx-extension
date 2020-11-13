@@ -246,7 +246,7 @@ class ControllerTest : BaseWebTest() {
 
         runBlocking(vertx.dispatcher()) {
 
-            WebClient.create(vertx)
+           webClient
                 .getAbs("http://127.0.0.1:8080/order")
                 .send()
                 .await()
@@ -255,6 +255,134 @@ class ControllerTest : BaseWebTest() {
                     Assert.assertEquals("bananasapplesoranges", it)
                 }
 
+        }
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun testContentType() {
+
+
+        runBlocking(vertx.dispatcher()) {
+
+           webClient
+                .getAbs("http://127.0.0.1:8080/consumes")
+                .putHeader("content-type" , "text/html")
+                .send()
+                .await()
+                .let {
+                    Assert.assertEquals(200, it.statusCode())
+                }
+
+           webClient
+                .getAbs("http://127.0.0.1:8080/consumes")
+                .putHeader("content-type" , "text/json")
+                .send()
+                .await()
+                .let {
+                    Assert.assertEquals(415, it.statusCode())
+                }
+
+
+           webClient
+                .getAbs("http://127.0.0.1:8080/produces")
+                .putHeader("accept" , "text/html")
+                .send()
+                .await()
+                .let {
+                    Assert.assertEquals(200, it.statusCode())
+                }
+
+           webClient
+                .getAbs("http://127.0.0.1:8080/produces")
+                .putHeader("accept" , "text/json")
+                .send()
+                .await()
+                .let {
+                    Assert.assertEquals(406, it.statusCode())
+                }
+
+        }
+    }
+
+
+    @Test
+    @Throws(Exception::class)
+    fun testRegex() {
+
+
+        runBlocking(vertx.dispatcher()) {
+
+
+
+
+
+            val METHODS: Set<HttpMethod> = HashSet(
+                Arrays.asList(
+                    HttpMethod.GET,
+                    HttpMethod.DELETE,
+                    HttpMethod.HEAD,
+                    HttpMethod.PATCH,
+                    HttpMethod.OPTIONS,
+                    HttpMethod.TRACE,
+                    HttpMethod.POST,
+                    HttpMethod.PUT
+                )
+            )
+
+            for (meth in METHODS) {
+
+                val pathRoute = "/somepath/whatever"
+                val pathRoute404 = "/other/whatever"
+
+                webClient
+                    .request(meth , pathRoute)
+                    .send()
+                    .await()
+                    .let {
+                        Assert.assertEquals(200, it.statusCode())
+                    }
+
+                webClient
+                    .request(meth , pathRoute404)
+                    .send()
+                    .await()
+                    .let {
+                        Assert.assertEquals(404, it.statusCode())
+                    }
+
+
+
+                val path = "/foo/${meth.name()}/somepath/whatever"
+
+                val path404 = "/foo/${meth.name()}/other/whatever"
+
+                webClient
+                    .request(meth , path404)
+                    .send()
+                    .await()
+                    .let {
+                        Assert.assertEquals(404, it.statusCode())
+                    }
+
+
+                for (method in METHODS) {
+
+                    webClient
+                        .request(method, path)
+                        .send()
+                        .await()
+                        .let {
+                            if (meth == method) {
+                                Assert.assertEquals(HttpResponseStatus.OK.code(), it.statusCode())
+                            } else {
+                                Assert.assertEquals(HttpResponseStatus.METHOD_NOT_ALLOWED.code(), it.statusCode())
+                            }
+
+                        }
+                }
+
+            }
         }
     }
 }
@@ -390,7 +518,6 @@ class TestController3 {
     }
 }
 
-
 @Controller
 class TestController4 {
     @ROUTE("/order")
@@ -412,4 +539,78 @@ class TestController4 {
         rc.response().write("apples")
         rc.next()
     }
+}
+
+@Controller
+class TestController5 {
+    @ROUTE("/consumes")
+    @Consumes("text/html")
+    fun testConsumes(@Context rc: RoutingContext) {
+        rc.response().end()
+    }
+
+    @ROUTE("/produces")
+    @Produces("text/html")
+    fun testProduces(@Context rc: RoutingContext) {
+        rc.response().end()
+    }
+}
+
+@Controller
+class TestController6 {
+    @ROUTE("\\/somepath\\/.*")
+    @Regex
+    fun testRoute(@Context rc: RoutingContext) {
+        rc.response().end()
+    }
+
+    @Regex
+    @GET("/foo/GET\\/somepath\\/.*")
+    suspend fun testGet(@Context rc: RoutingContext) {
+        rc.response().end()
+    }
+    @Regex
+    @POST("/foo/POST\\/somepath\\/.*")
+    suspend fun testPost(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+    @Regex
+    @OPTIONS("/foo/OPTIONS\\/somepath\\/.*")
+    suspend fun testOptions(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+    @Regex
+    @HEAD("/foo/HEAD\\/somepath\\/.*")
+    suspend fun testHead(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+    @Regex
+    @PUT("/foo/PUT\\/somepath\\/.*")
+    suspend fun testPut(@Context rc: RoutingContext) {
+
+
+        rc.response().end()
+    }
+    @Regex
+    @DELETE("/foo/DELETE\\/somepath\\/.*")
+    suspend fun testDelete(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+    @Regex
+    @TRACE("/foo/TRACE\\/somepath\\/.*")
+    suspend fun testTrace(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+    @Regex
+    @PATCH("/foo/PATCH\\/somepath\\/.*")
+    suspend fun testPatch(@Context rc: RoutingContext) {
+
+        rc.response().end()
+    }
+
 }

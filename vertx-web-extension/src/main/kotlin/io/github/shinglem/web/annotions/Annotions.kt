@@ -254,7 +254,8 @@ fun invalidParameter(param: KParameter): Pair<Annotation, KParameter>? {
 annotation class Controller
 
 
-
+@Target(AnnotationTarget.FUNCTION)
+annotation class Regex
 
 @Target(AnnotationTarget.FUNCTION)
 annotation class ROUTE(val path: String, vararg val method: io.github.shinglem.web.annotions.HttpMethod)
@@ -294,6 +295,13 @@ annotation class TRACE(val path: String)
 annotation class PATCH(val path: String)
 
 
+
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class Consumes(vararg val contentType: String)
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class Produces(vararg val contentType: String)
 
 
 

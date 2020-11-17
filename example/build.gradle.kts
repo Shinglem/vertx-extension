@@ -9,8 +9,10 @@ repositories {
 }
 
 dependencies {
-    api(project(":vertx-web-extension"))
-    api(project(":default-class-util"))
+//    api(project(":vertx-web-extension"))
+//    api(project(":default-class-util"))
+
+//    implementation("io.github.shinglem:vertx-web-extension:0.1")
 
     api("ch.qos.logback", "logback-classic", "1.2.3")
 

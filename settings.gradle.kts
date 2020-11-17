@@ -16,9 +16,10 @@ pluginManagement {
         jcenter()
         maven { setUrl("https://dl.bintray.com/kotlin/kotlin-eap") }
         maven("https://clojars.org/repo/")
-        maven("https://oss.sonatype.org/content/repositories/snapshots/")
-        mavenCentral()
         maven { setUrl("https://plugins.gradle.org/m2/") }
+        maven("https://oss.sonatype.org/content/repositories/snapshots/")
+        maven("https://maven.pkg.github.com/Shinglem/maven-repository")
+        mavenCentral()
     }
 
     plugins {

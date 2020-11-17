@@ -1,15 +1,7 @@
+/*
 package default
 
-import io.github.shinglem.core.main.VertxMain
-import io.github.shinglem.web.annotions.*
-import io.github.shinglem.web.annotions.Controller
-import io.github.shinglem.web.annotions.CookiesMap
-import io.github.shinglem.web.annotions.GET
-import io.github.shinglem.web.exp.annotions.Route
-import io.github.shinglem.web.verticle.WebVerticle
-import io.vertx.core.http.Cookie
-import io.vertx.core.json.JsonArray
-import io.vertx.core.json.JsonObject
+
 
 fun main() {
 
@@ -65,3 +57,4 @@ object TestController {
                 return "ok"
         }
 }
+*/

@@ -2,7 +2,11 @@
 .gradle
 build/
 #gradle/
+<<<<<<< HEAD
 #gradlew
+=======
+gradlew
+>>>>>>> d4894c563537a890dd2d26f827e2ecfeae6524a1
 .gradle/
 #gradlew.bat
 

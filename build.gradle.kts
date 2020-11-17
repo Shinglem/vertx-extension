@@ -9,7 +9,7 @@ plugins {
     java
     kotlin("jvm")
 }
-
+group = "com.github.Shinglem"
 repositories {
     // Use jcenter for resolving dependencies.
     // You can declare any Maven/Ivy/file repository here.

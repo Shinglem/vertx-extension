@@ -2,7 +2,7 @@ plugins {
     java
     kotlin("jvm")
 }
-group = "io.github.shinglem"
+//group = "io.github.shinglem"
 
 repositories {
     mavenCentral()

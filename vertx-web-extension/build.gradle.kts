@@ -1,8 +1,6 @@
 
-import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.URIish
-import org.gradle.kotlin.dsl.execution.ProgramText.Companion.from
 
 
 plugins {
@@ -31,7 +29,7 @@ buildscript {
 }
 
 
-group = "io.github.shinglem"
+//group = "io.github.shinglem"
 repositories {
     mavenCentral()
 }

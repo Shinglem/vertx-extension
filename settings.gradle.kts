@@ -34,9 +34,9 @@ pluginManagement {
 
 
 }
-rootProject.name = "vertx-extension"
+//rootProject.name = "vertx-extension"
 include("common")
 include("vertx-core-extension")
 include("vertx-web-extension")
 include("default-class-util")
-include("example")
+//include("example")

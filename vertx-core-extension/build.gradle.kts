@@ -1,8 +1,9 @@
 plugins {
     java
     kotlin("jvm")
+    maven
 }
-group = "com.github.Shinglem.vertx-extension"
+//group = "com.github.Shinglem.vertx-extension"
 
 repositories {
     mavenCentral()

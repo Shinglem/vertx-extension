@@ -4,7 +4,7 @@ plugins {
     maven
 }
 
-//group = "com.github.Shinglem.vertx-extension"
+
 repositories {
     mavenCentral()
 }

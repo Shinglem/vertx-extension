@@ -7,6 +7,7 @@ import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.SessionHandler
+import io.vertx.ext.web.handler.StaticHandler
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
 import io.vertx.ext.web.handler.sockjs.SockJSSocket
@@ -44,6 +45,7 @@ class WebSocketTest {
                 }
             }
         }
+        router.route("/static/*").handler(StaticHandler.create());
 //        router.route("/myapp/*").handler(sockJSHandler)
         router.mountSubRouter("/myapp" , subRouter)
         server

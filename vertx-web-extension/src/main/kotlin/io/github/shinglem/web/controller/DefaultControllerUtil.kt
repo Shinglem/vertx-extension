@@ -84,12 +84,16 @@ object DefaultControllerUtil : ControllerUtil {
         val filted = classes
             .filter {
 
-                val list = it.annotations.toList()
-                val b = list.any {
-                    it.annotationClass.isSubclassOf(WebSocketController::class)
-                }
+                val ann = it.getAnnotation(WebSocketController::class.java)
+                ann != null
+//                val list = it.annotations.toList()
+////                val b = list.any {
+////                    it.annotationClass.isSubclassOf(WebSocketController::class)
+////                }
+//
+//                val b = list.any { it is WebSocketController }
 
-                b
+//                b
             }.also {
                 logger.debug("websocket controllers =>   $it")
             }
@@ -111,11 +115,9 @@ object DefaultControllerUtil : ControllerUtil {
                     .filter { func ->
 
                         val wsFuncs = func
-                            .annotations
-                            .filter {
-                                it.annotationClass.isSubclassOf(WebSocketPath::class)
+                            .annotations.any {
+                                it is WebSocketPath
                             }
-                            .isNotEmpty()
 
                         wsFuncs
 
@@ -151,12 +153,17 @@ object DefaultControllerUtil : ControllerUtil {
                 val param = func.parameters
                     .filter { it.kind == KParameter.Kind.VALUE }
                     .let {
+//                        if (!(it.size == 1
+//                                    && it.first().type.jvmErasure.isSuperclassOf(SockJSSocket::class)
+//                                    && (func.returnType.jvmErasure.isSubclassOf(Unit::class)
+//                                    || func.returnType.jvmErasure.isSubclassOf(Void::class)
+//                                    ))
+//                        ) {
                         if (!(it.size == 1
-                                    && it.first().type.jvmErasure.isSuperclassOf(SockJSSocket::class)
-                                    && func.returnType.jvmErasure.isSubclassOf(Unit::class) || func.returnType.jvmErasure.isSubclassOf(
-                                Void::class
-                            )
-                                    )
+                                    && it.first().type.jvmErasure == SockJSSocket::class
+                                    && (func.returnType.jvmErasure == Unit::class
+                                    || func.returnType.jvmErasure == Void::class
+                                    ))
                         ) {
                             throw ParamNotSupportException("${controllerKlz.simpleName}#${func.name} => websocket controller function can have only one parameter with type io.vertx.ext.web.handler.sockjs.SockJSSocket and have no return")
                         }
@@ -187,13 +194,14 @@ object DefaultControllerUtil : ControllerUtil {
 
         val filted = classes
             .filter {
-
-                val list = it.annotations.toList()
-                val b = list.any {
-                    it.annotationClass.isSubclassOf(Controller::class)
-                }
-
-                b
+                val ann = it.getAnnotation(Controller::class.java)
+                ann != null
+//                val list = it.annotations.toList()
+//                val b = list.any {
+//                    it is Controller
+//                }
+//
+//                b
             }.also {
                 logger.debug("controllers =>   $it")
             }
@@ -234,38 +242,34 @@ object DefaultControllerUtil : ControllerUtil {
 
                         val order = func
                             .annotations
-                            .firstOrNull { ann ->
-                                ann.annotationClass.isSubclassOf(Order::class)
-                            }
+                            .firstOrNull { it is Order }
                             ?.safeCastTo<Order>()
                             ?.order ?: 0
 
                         val block = func
                             .annotations
-                            .firstOrNull { ann ->
-                                ann.annotationClass.isSubclassOf(Blocking::class)
-                            }
+                            .firstOrNull { it is Blocking }
                             ?.let { true } ?: false
 
                         val regex = func
                             .annotations
-                            .firstOrNull { ann ->
-                                ann.annotationClass.isSubclassOf(Regex::class)
+                            .firstOrNull {
+                                it is Regex
                             }
                             ?.let { true } ?: false
 
                         val consumes = func
                             .annotations
-                            .firstOrNull { ann ->
-                                ann.annotationClass.isSubclassOf(Consumes::class)
+                            .firstOrNull {
+                                it is Consumes
                             }
                             ?.safeCastTo<Consumes>()
                             ?.contentType?.toList() ?: listOf<String>()
 
                         val produces = func
                             .annotations
-                            .firstOrNull { ann ->
-                                ann.annotationClass.isSubclassOf(Produces::class)
+                            .firstOrNull {
+                                it is Produces
                             }
                             ?.safeCastTo<Produces>()
                             ?.contentType?.toList() ?: listOf<String>()
@@ -367,6 +371,67 @@ object DefaultControllerUtil : ControllerUtil {
 
                                     }
                                     .map { (ann, kp) ->
+                                        when (ann) {
+                                            is Context -> {
+                                                kp to rc
+                                            }
+                                            is CookiesMap -> {
+                                                kp to cookies
+                                            }
+                                            is StringParam -> {
+                                                kp to paramJson.getString(kp.name)
+                                            }
+                                            is NumberParam -> {
+                                                kp to when (kp.type) {
+                                                    Number::class.starProjectedType -> paramJson.getNumber(kp.name)
+                                                    Int::class.starProjectedType -> paramJson.getInteger(kp.name)
+                                                    Long::class.starProjectedType -> paramJson.getLong(kp.name)
+                                                    Double::class.starProjectedType -> paramJson.getDouble(kp.name)
+                                                    Float::class.starProjectedType -> paramJson.getFloat(kp.name)
+                                                    else -> throw ParamNotSupportException("number ${kp.type} is not supported")
+                                                }
+                                            }
+                                            is BoolParam -> {
+                                                kp to paramJson.getBoolean(kp.name)
+                                            }
+                                            is JsonObjectParam -> {
+                                                kp to paramJson.getJsonObject(kp.name)
+                                            }
+                                            is JsonArrayParam -> {
+                                                kp to paramJson.getJsonArray(kp.name)
+                                            }
+                                            is ParamsMap -> {
+                                                when (kp.type.jvmErasure) {
+                                                    Map::class -> kp to paramJson.map
+                                                    JsonObject::class -> kp to paramJson
+                                                    else -> throw ParamNotSupportException("${ann.annotationClass} => ${kp} is not supported , just Map and JsonObject")
+                                                }
+                                            }
+                                            is BodyString -> {
+                                                kp to bodyString
+                                            }
+                                            is BodyRaw -> {
+                                                kp to bodyRaw
+                                            }
+                                            is FileUpload -> {
+                                                kp to rc.fileUploads()
+                                            }
+                                            is EntityParam -> {
+                                                kp to paramJson.mapTo(
+                                                    kp.type.jvmErasure.java
+                                                )
+                                            }
+                                            is Id -> {
+                                                kp to vertxProducer.nextId()
+                                            }
+                                            is IdString -> {
+                                                kp to vertxProducer.nextIdStr()
+                                            }
+
+                                            else -> throw ParamNotSupportException("${ann.annotationClass} => ${kp} is not supported")
+                                        }
+                                    }
+                                    /*.map { (ann, kp) ->
                                         when (ann.annotationClass) {
                                             Context::class -> {
                                                 kp to rc
@@ -426,7 +491,7 @@ object DefaultControllerUtil : ControllerUtil {
 
                                             else -> throw ParamNotSupportException("${ann.annotationClass} => ${kp} is not supported")
                                         }
-                                    }
+                                    }*/
                                     .toMutableList()
                                     .apply {
                                         func.instanceParameter
@@ -439,7 +504,7 @@ object DefaultControllerUtil : ControllerUtil {
 
                                 val result = func.callSuspendBy(params)
                                     .let {
-                                        if (func.returnType.jvmErasure.isSubclassOf(Future::class)) {
+                                        if (func.returnType.jvmErasure == Future::class) {
                                             (it as Future<*>).await()
                                         } else {
                                             it
@@ -450,9 +515,8 @@ object DefaultControllerUtil : ControllerUtil {
 
 
                                 when {
-                                    func.returnType.jvmErasure.isSubclassOf(Unit::class) || func.returnType.jvmErasure.isSubclassOf(
-                                        Void::class
-                                    ) -> {
+                                    func.returnType.jvmErasure == Unit::class || func.returnType.jvmErasure == Void::class
+                                    -> {
 
 
                                         if (rc.response().ended()) {

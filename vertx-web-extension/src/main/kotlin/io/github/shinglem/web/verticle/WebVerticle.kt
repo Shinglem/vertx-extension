@@ -5,7 +5,9 @@ import io.github.shinglem.log.LoggerFactory
 import io.github.shinglem.util.consoletable.PrettyTable
 import io.github.shinglem.vertx.ext.asyncBlockingJob
 import io.github.shinglem.web.config.WebConfig
+import io.github.shinglem.web.config.WsConfig
 import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.ext.web.impl.RouteStateImpl
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.await
@@ -27,6 +29,10 @@ class WebVerticle() : CoroutineVerticle() {
 
     private val controllerPack = WebConfig.controllerPack()
 
+    private val isWsOpen = WsConfig.isOpen()
+
+    private val sockJSHandlerOptions = WsConfig.sockJSHandlerOptions()
+
     override suspend fun start() {
         logger.debug("---------web start---------" + this.deploymentID)
 
@@ -35,14 +41,13 @@ class WebVerticle() : CoroutineVerticle() {
         val server = vertx.createHttpServer(options)
 
         routeUtil.registerFullRoute(router, respUtil)
-
-//        controllerUtil.regist(controllerPack, router, VERTX, respUtil).await()
-        routeUtil.registerFullRoute(router, respUtil)
         controllerUtil.regist(controllerPack, router, VERTX, respUtil)
-//        vertx.asyncBlockingJob<Unit> {
-//
-//
-//        }.join()
+
+        if (isWsOpen) {
+            logger.info("websocket will open ...... ")
+            val sockJSHandler = SockJSHandler.create(vertx, sockJSHandlerOptions)
+            controllerUtil.registWebsocket(controllerPack, router, VERTX, sockJSHandler)
+        }
 
 
         if (logger.isDebugEnabled) {

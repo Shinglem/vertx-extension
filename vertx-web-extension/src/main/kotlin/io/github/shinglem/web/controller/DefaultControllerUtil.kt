@@ -9,10 +9,13 @@ import io.github.shinglem.web.exceptions.*
 import io.github.shinglem.web.response.ResponseUtil
 import io.vertx.core.Future
 import io.vertx.core.Handler
+import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
+import io.vertx.ext.web.handler.sockjs.SockJSHandler
+import io.vertx.ext.web.handler.sockjs.SockJSSocket
 import io.vertx.kotlin.coroutines.await
 import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +64,120 @@ object DefaultControllerUtil : ControllerUtil {
         responseUtil = respUtil
 
         registControllers(getRegistInfo(getControllers(pack)), router, vertxProducer)
+    }
+
+    override fun registWebsocket(
+        pack: String, router: Router,
+        vertxProducer: VertxProducer, sockJSHandler: SockJSHandler
+    ) {
+        registWebSocketControllers(
+            getWebSocketRegistInfo(
+                getWebSocketControllers(pack)
+            ), router, vertxProducer, sockJSHandler
+        )
+    }
+
+    private fun getWebSocketControllers(pack: String = ""): List<KClass<out Any>> {
+
+        val classes = classUtil.getClasses(pack)
+
+        val filted = classes
+            .filter {
+
+                val list = it.annotations.toList()
+                val b = list.any {
+                    it.annotationClass.isSubclassOf(WebSocketController::class)
+                }
+
+                b
+            }.also {
+                logger.debug("websocket controllers =>   $it")
+            }
+
+        val model = filted.map {
+
+            val kt = it.kotlin
+            kt
+        }
+
+        return model
+
+    }
+
+    private fun getWebSocketRegistInfo(controllers: List<KClass<out Any>>): List<Pair<KClass<out Any>, List<KFunction<*>>>> {
+        val info = controllers
+            .map { klazz ->
+                val routeInfo = klazz.functions
+                    .filter { func ->
+
+                        val wsFuncs = func
+                            .annotations
+                            .filter {
+                                it.annotationClass.isSubclassOf(WebSocketPath::class)
+                            }
+                            .isNotEmpty()
+
+                        wsFuncs
+
+                    }
+
+                klazz to routeInfo
+            }
+        return info
+    }
+
+
+    private fun registWebSocketControllers(
+        infos: List<Pair<KClass<out Any>, List<KFunction<*>>>>,
+        router: Router,
+        vertxProducer: VertxProducer,
+        sockJSHandler: SockJSHandler
+    ) {
+
+        val vertx = vertxProducer.vertx()
+        infos.forEach { (controllerKlz, funcs) ->
+            val controller = classUtil.getInstance(controllerKlz)
+
+            funcs.forEach { func ->
+                val path = func.annotations
+                    .filterIsInstance<WebSocketPath>()
+                    .last()
+                    .path
+                    .apply {
+                        if (this.endsWith("/"))
+                            this.removeSuffix("/")
+                    }
+
+                val param = func.parameters
+                    .filter { it.kind == KParameter.Kind.VALUE }
+                    .let {
+                        if (!(it.size == 1
+                                    && it.first().type.jvmErasure.isSuperclassOf(SockJSSocket::class)
+                                    && func.returnType.jvmErasure.isSubclassOf(Unit::class) || func.returnType.jvmErasure.isSubclassOf(
+                                Void::class
+                            )
+                                    )
+                        ) {
+                            throw ParamNotSupportException("${controllerKlz.simpleName}#${func.name} => websocket controller function can have only one parameter with type io.vertx.ext.web.handler.sockjs.SockJSSocket and have no return")
+                        }
+                        it.first()
+                    }
+
+                router.mountSubRouter(path, sockJSHandler.socketHandler { sockJSSocket: SockJSSocket ->
+                    CoroutineScope(vertx.dispatcher()).launch {
+
+                        val params = mapOf(
+                            param to sockJSSocket,
+                            func.instanceParameter!! to controller
+                        )
+                        val result = func.callSuspendBy(params)
+                    }
+                })
+
+
+            }
+
+        }
     }
 
 

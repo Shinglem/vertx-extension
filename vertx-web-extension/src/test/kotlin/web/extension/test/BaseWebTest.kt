@@ -15,7 +15,7 @@ open class BaseWebTest {
 
     val vertx = VERTX.vertx()
     private val httpClientOptions = HttpClientOptions().setDefaultPort(8080)
-    private val client = vertx.createHttpClient()
+    val client = vertx.createHttpClient()
     val webClient = WebClient.create(vertx, WebClientOptions(httpClientOptions))
 
 }

@@ -253,6 +253,13 @@ fun invalidParameter(param: KParameter): Pair<Annotation, KParameter>? {
 @Target(AnnotationTarget.CLASS)
 annotation class Controller
 
+@Target(AnnotationTarget.CLASS)
+annotation class WebSocketController
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class WebSocketPath(val path: String)
+
+
 
 @Target(AnnotationTarget.FUNCTION)
 annotation class Regex

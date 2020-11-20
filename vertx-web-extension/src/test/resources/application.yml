@@ -2,3 +2,9 @@ vertx:
   web:
     httpServerOptions:
       port: 8080
+
+    ws:
+      open: true
+      sockJSHandlerOptions:
+        heartbeatInterval: 2000
+

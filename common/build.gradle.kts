@@ -12,6 +12,9 @@ val vertxVersion: String by project
 
 dependencies {
 
+//    api(project(":default-class-util"))
+
+
     //vertx
     api(group = "io.vertx", name = "vertx-core", version = vertxVersion)
     api(group = "io.vertx", name = "vertx-lang-kotlin", version = vertxVersion)
@@ -30,6 +33,8 @@ dependencies {
     //log
     api("org.slf4j:slf4j-api:1.7.25")
 
+
+    api(kotlin("reflect"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 
     testImplementation("junit", "junit", "4.12")

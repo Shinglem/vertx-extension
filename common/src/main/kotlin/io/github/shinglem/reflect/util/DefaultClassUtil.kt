@@ -1,7 +1,6 @@
 package io.github.shinglem.reflect.util
 
 import io.github.shinglem.util.ClassUtil
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileFilter
 import java.io.IOException
@@ -11,7 +10,6 @@ import java.net.URLDecoder
 import java.util.*
 import java.util.jar.JarFile
 import kotlin.reflect.KClass
-import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.createInstance
 
 

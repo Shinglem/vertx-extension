@@ -21,7 +21,7 @@ object StaticSourceConfig {
 
     fun staticHandlerOptions() : JsonObject {
 
-        val options = config.getJsonObject("sockJSHandlerOptions") ?: JsonObject()
+        val options = config.getJsonObject("staticHandlerOptions") ?: JsonObject()
 
 
         return options

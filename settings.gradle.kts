@@ -38,5 +38,5 @@ pluginManagement {
 include("common")
 include("vertx-core-extension")
 include("vertx-web-extension")
-include("default-class-util")
+//include("default-class-util")
 //include("example")

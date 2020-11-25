@@ -8,12 +8,12 @@ open class LoggerFactory {
     companion object{
         @JvmStatic
         fun getLogger(name: String?): Logger {
-            val logger = LoggerFactory.getLogger(name)
+            val logger = LoggerExt(LoggerFactory.getLogger(name))
             return logger
         }
         @JvmStatic
         fun getLogger(clazz: Class<*>): Logger {
-            val logger = LoggerFactory.getLogger(clazz)
+            val logger = LoggerExt(LoggerFactory.getLogger(clazz))
             return logger
         }
     }

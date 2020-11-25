@@ -306,7 +306,7 @@ class WebSocketTest {
                 Handler { socket: SockJSSocket ->
                     socket.write(
                         Buffer.buffer(str),
-                        onSuccess { v -> complete() })
+                        onSuccess { complete() })
                 }
             }
 
@@ -392,7 +392,7 @@ class WebSocketTest {
                         }
                 }
             }
-        }, DeploymentOptions().setInstances(1), onSuccess { id -> latch.countDown() })
+        }, DeploymentOptions().setInstances(1), onSuccess { latch.countDown() })
 
 
 

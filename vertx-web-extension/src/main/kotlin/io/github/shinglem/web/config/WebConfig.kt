@@ -16,7 +16,7 @@ object WebConfig {
 
     private val config = VertxConfig.config().getJsonObject("vertx")["web"] ?: JsonObject()
 
-    private val classUtil = ClassUtilFactory().getClassUtil()
+    private val classUtil = ClassUtilFactory().getInstance()
 
     fun controllerPack(): String {
         val options = config.getString("controllerPack") ?: ""

@@ -7,11 +7,11 @@ import kotlin.reflect.KClass
 import kotlin.reflect.safeCast
 
 private lateinit var classUtil : ClassUtil
-open class ClassUtilFactory {
+open class ClassUtilFactory :BaseFactory<ClassUtil>{
     private val logger = LoggerFactory.getLogger(this::class.java)
 
 
-    fun getClassUtil(): ClassUtil {
+    override fun getInstance(): ClassUtil {
 
         if (::classUtil.isInitialized) {
             return classUtil
@@ -33,6 +33,10 @@ open class ClassUtilFactory {
 
         return classUtil
 
+    }
+
+    override fun setInstance(ins: ClassUtil) {
+        classUtil = ins
     }
 }
 

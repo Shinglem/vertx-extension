@@ -1,10 +1,8 @@
 package io.github.shinglem.core.main
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.github.shinglem.log.LoggerFactory
-import io.github.shinglem.util.ClassUtilFactory
-import io.github.shinglem.util.id.IdFactory
+import io.github.shinglem.util.*
+import io.github.shinglem.util.id.IdGenerator
 import io.github.shinglem.vertx.json.registerJsonMapper
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Verticle
@@ -17,80 +15,48 @@ import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.net.InetAddress
-import java.time.LocalDateTime
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import kotlin.reflect.KClass
 
-object VertxConfig {
 
-    private val USER_DIR = System.getProperty("user.dir")
-    private val PROFILE = System.getProperty("spring.profiles.active") ?: (System.getProperty("profiles.active") ?: "")
-    private val MAIN_FILE_NAME = (System.getProperty("config.name") ?: "")
+object VertxConfig : ConfigInterface by ConfigFactory().getInstance()
 
 
-    private final val logger = LoggerFactory.getLogger(this::class.java.name)
+private lateinit var vertxProducer: VertxProducer
 
-    private var vertxConfig: JsonObject? = null
-
-
-    private val mapper = ObjectMapper(YAMLFactory())
-
-    init {
-        loadConfig()
-    }
+open class VertxProducerFactory : BaseFactory<VertxProducer> {
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
 
-    fun config(): JsonObject {
-        return vertxConfig!!.copy()
-    }
+    override fun getInstance(): VertxProducer {
 
-    fun mergeConfig(config: JsonObject) {
-        vertxConfig!!.mergeIn(config, true)
-    }
-
-    private fun loadConfig() {
-        runBlocking {
-            logger.debug("----- load config -----")
-            val tempVertx = Vertx.vertx()
-
-            val fileName =
-                "${if (MAIN_FILE_NAME.isNullOrEmpty()) "application" else MAIN_FILE_NAME}${if (PROFILE.isNullOrEmpty()) "" else "-$PROFILE"}.yml"
-            logger.debug("----- load inner config $fileName -----")
-            val configInner = try {
-                val file = tempVertx.fileSystem().readFile(fileName).await()
-                val map = mapper.readValue(file.toString(), Map::class.java) as Map<String, *>
-                val json = JsonObject(map)
-
-                json
-            } catch (e: Throwable) {
-                logger.warn("error in find inner config")
-                logger.debug("", e)
-                JsonObject()
-            }
-            logger.debug("----- load outer config $USER_DIR/$fileName -----")
-
-            val configOuter = try {
-                val file = tempVertx.fileSystem().readFile("$USER_DIR/$fileName").await()
-                val map = mapper.readValue(file.toString(), Map::class.java) as Map<String, *>
-                val json = JsonObject(map)
-
-                json
-            } catch (e: Throwable) {
-                logger.warn("error in find outer config")
-                logger.debug("", e)
-                JsonObject()
-            }
-
-            vertxConfig = configInner.mergeIn(configOuter)
-            logger.debug("load config : ${vertxConfig!!.encodePrettily()}")
+        if (::vertxProducer.isInitialized) {
+            return vertxProducer
         }
+
+        val service = ServiceLoader.load(VertxProducer::class.java)
+        logger.debug("find VertxProducer ......")
+        service.forEach {
+            logger.debug("${it.javaClass}")
+        }
+
+        if (service.count() == 0) {
+            logger.debug("none VertxProducer load , use VertxSingleProducer ......")
+            vertxProducer = VertxSingleProducer()
+        } else {
+            vertxProducer = service.first()
+            logger.debug("use ${vertxProducer::class.simpleName}......")
+        }
+
+        return vertxProducer
+
     }
 
-
-
-
+    override fun setInstance(ins: VertxProducer) {
+        vertxProducer = ins
+    }
 }
 
 interface VertxProducer {
@@ -101,7 +67,7 @@ interface VertxProducer {
     fun nextIdStr(): String
 }
 
-object VertxSingleProducer : VertxProducer {
+class VertxSingleProducer : VertxProducer {
     private final val logger = LoggerFactory.getLogger(this::class.java.name)
 
     private var vertx: Vertx? = null
@@ -113,7 +79,7 @@ object VertxSingleProducer : VertxProducer {
     }
 
     private val vertxConfig = VertxConfig.config()["vertx"] ?: JsonObject()
-
+    private val classUtil = ClassUtilFactory().getInstance()
     private val baseDeploymentOptions = vertxConfig["baseDeploymentOptions"] ?: JsonObject()
     private val vertxOptions = vertxConfig["vertxOptions"] ?: JsonObject()
 
@@ -121,6 +87,23 @@ object VertxSingleProducer : VertxProducer {
     init {
         vertxInit()
     }
+
+    private val idGenerator = IdGeneratorFactory()
+        .apply {
+            vertxConfig
+                .getJsonObject("vertx")
+                ?.getString("idGenerator")
+                ?.run {
+                    try {
+                        val idGenerator = classUtil.getInstance<IdGenerator>(this)
+                        this@apply.setInstance(idGenerator)
+                    } catch (e: Throwable) {
+                        logger.error("can not get $this ...", e)
+                        throw e
+                    }
+                }
+
+        }.getInstance()
 
     private fun vertxInit() {
 
@@ -170,46 +153,15 @@ object VertxSingleProducer : VertxProducer {
         return baseOption!!
     }
 
-    override fun nextId(): Long {
-        TODO("Not yet implemented")
-    }
-
-    override fun nextIdStr(): String {
-        TODO("Not yet implemented")
-    }
-
-
-}
-
-object VERTX : VertxProducer by VertxSingleProducer {
-
-    private val classUtil = ClassUtilFactory().getClassUtil()
-
-    private val idFactoryName = VertxConfig.config()
-        .get<JsonObject?>("vertx")
-        ?.getString("idFactory")
-        ?: "default"
-
-    private val idFactory = idFactoryName.let {
-        if ("default" == it) {
-            return@let IdFactory()
-        }
-
-        return@let classUtil.getInstance(it)
-    }
-
-    private val idGeneratorName = VertxConfig.config()
-        .get<JsonObject?>("vertx")
-        ?.getString("idGenerator")
-        ?: "SnowFlake"
-
-    private val idGenerator = idFactory.getIdGenerator(idGeneratorName)
 
     override fun nextId() = idGenerator.nextId()
 
     override fun nextIdStr() = idGenerator.next()
+
+
 }
 
+object VERTX : VertxProducer by VertxProducerFactory().getInstance()
 
 object VertxMain {
 

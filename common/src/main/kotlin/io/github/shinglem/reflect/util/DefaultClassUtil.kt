@@ -12,7 +12,7 @@ import java.util.jar.JarFile
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 
-
+@Suppress("UNCHECKED_CAST")
 class DefaultClassUtil : ClassUtil {
     override fun <T: Any> getInstance(name: String): T {
         val cla = Class.forName(name)

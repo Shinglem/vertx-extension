@@ -9,7 +9,6 @@ import io.github.shinglem.web.exceptions.*
 import io.github.shinglem.web.response.ResponseUtil
 import io.vertx.core.Future
 import io.vertx.core.Handler
-import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Router
@@ -54,7 +53,7 @@ object DefaultControllerUtil : ControllerUtil {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    private val classUtil = ClassUtilFactory().getClassUtil()
+    private val classUtil = ClassUtilFactory().getInstance()
     private lateinit var responseUtil: ResponseUtil
 
     override fun regist(
@@ -177,7 +176,7 @@ object DefaultControllerUtil : ControllerUtil {
                             param to sockJSSocket,
                             func.instanceParameter!! to controller
                         )
-                        val result = func.callSuspendBy(params)
+                        func.callSuspendBy(params)
                     }
                 })
 
